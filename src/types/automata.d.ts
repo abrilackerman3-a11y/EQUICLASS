@@ -9,4 +9,5 @@ export interface AutomataState {
   addEdge: (sourceId: string, targetId: string) => void;
   removeElement: (id: string) => void;
   toggleFinalState: (id: string) => void;
+  updateEdgeSymbol: (edgeId: string, newSymbol: "0" | "1") => void;
 }
