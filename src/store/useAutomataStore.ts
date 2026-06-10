@@ -8,9 +8,10 @@ const initialNode: ElementDefinition = {
   position: { x: 150, y: 150 },
   classes: "initial",
 };
+
 export const useAutomataStore = create<AutomataState>((set) => ({
   elements: [initialNode],
-  nodeCount: 1,
+  nodeCount: 1, // Se mantiene por compatibilidad con la interfaz
 
   addNode: (position) =>
     set((state) => {
@@ -31,29 +32,48 @@ export const useAutomataStore = create<AutomataState>((set) => ({
         position,
       };
 
-      return { elements: [...state.elements, newNode] };
+      const newElements = [...state.elements, newNode];
+      
+      return { 
+        elements: newElements,
+        // Actualiza el contador real de nodos por si acaso
+        nodeCount: newElements.filter(el => el.group === "nodes").length 
+      };
     }),
 
   addEdge: (sourceId, targetId) =>
     set((state) => {
-      // Evitar aristas duplicadas temporalmente (se mejorará en la Fase 2)
-      const edgeExists = state.elements.some(
-        (el) =>
-          el.group === "edges" &&
-          el.data.source === sourceId &&
-          el.data.target === targetId,
+      // 1. Obtener solo las aristas salientes del nodo origen
+      const outgoingEdges = state.elements.filter(
+        (el) => el.group === "edges" && el.data.source === sourceId
       );
-      if (edgeExists) return state;
 
+      // 2. Ver qué símbolos ya se están usando en este nodo
+      const usedSymbols = outgoingEdges.map((el) => el.data.label);
+
+      // 3. Validar determinismo: Alfabeto {0, 1} usando 'as const' para tipado estricto
+      const ALPHABET = ["0", "1"] as const;
+      const availableSymbols = ALPHABET.filter(
+        (sym) => !usedSymbols.includes(sym)
+      );
+
+      // 4. Si ya no hay símbolos disponibles, bloqueamos la creación
+      if (availableSymbols.length === 0) {
+        console.warn("El nodo ya tiene todas las transiciones posibles (0 y 1).");
+        return state; 
+      }
+
+      // 5. Crear la nueva arista con el primer símbolo disponible
       const newEdge: ElementDefinition = {
         group: "edges",
         data: {
           id: `e-${sourceId}-${targetId}-${Date.now()}`,
           source: sourceId,
           target: targetId,
-          label: "?",
+          label: availableSymbols[0], // TypeScript ahora sabe que es exactamente '0' o '1'
         },
       };
+
       return { elements: [...state.elements, newEdge] };
     }),
 
@@ -64,7 +84,10 @@ export const useAutomataStore = create<AutomataState>((set) => ({
         (el) =>
           el.data.id !== id && el.data.source !== id && el.data.target !== id,
       );
-      return { elements: filteredElements };
+      return { 
+        elements: filteredElements,
+        nodeCount: filteredElements.filter(el => el.group === "nodes").length
+      };
     }),
 
   toggleFinalState: (id) =>
@@ -81,6 +104,44 @@ export const useAutomataStore = create<AutomataState>((set) => ({
         }
         return el;
       });
+      return { elements: updatedElements };
+    }),
+
+  updateEdgeSymbol: (edgeId, newSymbol) =>
+    set((state) => {
+      const edgeToUpdate = state.elements.find(
+        (el) => el.group === "edges" && el.data.id === edgeId
+      );
+      
+      if (!edgeToUpdate) return state;
+
+      const source = edgeToUpdate.data.source;
+
+      // Verificar que el nuevo símbolo no choque con otra arista del MISMO nodo
+      const conflict = state.elements.some(
+        (el) =>
+          el.group === "edges" &&
+          el.data.source === source &&
+          el.data.label === newSymbol &&
+          el.data.id !== edgeId
+      );
+
+      if (conflict) {
+        console.warn("Símbolo ya utilizado en otra transición de este nodo.");
+        return state;
+      }
+
+      // Aplicar el cambio si no hay conflictos
+      const updatedElements = state.elements.map((el) => {
+        if (el.group === "edges" && el.data.id === edgeId) {
+          return {
+            ...el,
+            data: { ...el.data, label: newSymbol },
+          };
+        }
+        return el;
+      });
+
       return { elements: updatedElements };
     }),
 }));
