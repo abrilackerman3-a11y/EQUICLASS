@@ -4,6 +4,7 @@ import cytoscape from "cytoscape";
 import type { Core, EventObject, StylesheetStyle } from "cytoscape";
 import edgehandles from "cytoscape-edgehandles";
 import { useAutomataStore } from "../../store/useAutomataStore";
+import { EdgeContextMenu } from "./EdgeMenu";
 
 cytoscape.use(edgehandles);
 
@@ -109,6 +110,11 @@ export const GraphCanvas: React.FC = () => {
   const [showHelp, setShowHelp] = useState(false);
   const isDrawModeRef = useRef(false);
 
+  const [menuState, setMenuState] = useState<{
+    edgeId: string;
+    position: { x: number; y: number };
+  } | null>(null);
+
   useEffect(() => {
     isDrawModeRef.current = isDrawMode;
     if (cyRef.current) {
@@ -172,6 +178,23 @@ export const GraphCanvas: React.FC = () => {
       if (evt.target === cy) {
         addNode(evt.position);
       }
+    });
+
+    cy.on("tap", "edge", (evt: EventObject) => {
+      if (isDrawModeRef.current) return;
+
+      const edge = evt.target;
+      const renderedPos = edge.renderedMidpoint();
+      const containerRect = cy.container()?.getBoundingClientRect();
+      if (!containerRect) return;
+
+      setMenuState({
+        edgeId: edge.id(),
+        position: {
+          x: containerRect.left + renderedPos.x,
+          y: containerRect.top + renderedPos.y - 10,
+        },
+      });
     });
 
     cy.on("cxttap taphold", "node, edge", (evt: EventObject) => {
@@ -248,6 +271,14 @@ export const GraphCanvas: React.FC = () => {
           Transiciones
         </button>
       </div>
+
+      {menuState && (
+        <EdgeContextMenu
+          edgeId={menuState.edgeId}
+          position={menuState.position}
+          onClose={() => setMenuState(null)}
+        />
+      )}
     </div>
   );
 };
