@@ -181,6 +181,7 @@ export const GraphCanvas: React.FC = () => {
     });
 
     cy.on("tap", "edge", (evt: EventObject) => {
+      console.log("EDGE TAPPED", evt.target.id());
       if (isDrawModeRef.current) return;
 
       const edge = evt.target;
