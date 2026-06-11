@@ -245,6 +245,10 @@ export const GraphCanvas: React.FC = () => {
                 <span className="text-blue-500 font-bold">•</span>{" "}
                 <b>Toque largo:</b> Eliminar elemento
               </li>
+              <li>
+                <span className="text-blue-500 font-bold">•</span>{" "}
+                <b>Toque en arista:</b> Cambiar símbolo (0/1)
+              </li>
             </ul>
           </div>
         )}
