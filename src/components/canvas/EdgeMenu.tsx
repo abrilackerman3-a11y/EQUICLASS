@@ -43,13 +43,13 @@ export function EdgeContextMenu({ edgeId, position, onClose }: EdgeContextMenuPr
         onClick={onClose}
       />
       <div
-        className="absolute z-50 flex gap-1 rounded-lg bg-white shadow-lg border border-gray-200 p-1"
+        className="fixed z-50 flex gap-1 rounded-lg bg-white shadow-lg border border-gray-200 p-1"
         style={{
-          left: position.x,
-          top: position.y,
-          transform: "translate(-50%, -100%)",
-        }}
-      >
+            left: position.x,
+            top: position.y,
+            transform: "translate(-50%, -100%)",
+     }}
+>
         {(["0", "1"] as const).map((symbol) => {
           const isCurrent = symbol === currentLabel;
           const isDisabled = !isCurrent && usedByOthers.includes(symbol);
