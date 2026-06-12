@@ -71,7 +71,7 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
     },
   },
   {
-    selector: "edge[source = target]",
+    selector: "edge:loop",
     style: {
       "curve-style": "bezier",
       "control-point-step-size": 32,
@@ -96,11 +96,28 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
       "source-arrow-color": "#ef4444",
     },
   },
+  {
+    selector: "node.sink-node",
+    style: {
+      "background-color": "#f3f4f6",
+      "border-width": 2,
+      "border-color": "#9ca3af",
+      "border-style": "dashed",
+      color: "#4b5563",
+    },
+  },
 ];
 
 export const GraphCanvas: React.FC = () => {
-  const { elements, addNode, addEdge, removeElement, toggleFinalState } =
-    useAutomataStore();
+  const {
+    elements,
+    addNode,
+    addEdge,
+    removeElement,
+    toggleFinalState,
+    pruneUnreachableNodes,
+    injectSinkState,
+  } = useAutomataStore();
 
   const cyRef = useRef<Core | null>(null);
   const ehRef = useRef<EdgeHandlesInstance | null>(null);
@@ -215,6 +232,22 @@ export const GraphCanvas: React.FC = () => {
         boxSelectionEnabled={false}
       />
 
+      {/* --- BOTONES DE PRUEBA DEL HILO B (NUEVO) --- */}
+      <div className="absolute top-4 right-4 flex flex-col gap-3 z-20">
+        <button
+          onClick={pruneUnreachableNodes}
+          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md font-medium transition-colors text-sm"
+        >
+          Limpiar Inalcanzables
+        </button>
+        <button
+          onClick={injectSinkState}
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md font-medium transition-colors text-sm"
+        >
+          Inyectar Estado Pozo
+        </button>
+      </div>
+
       <div className="absolute top-4 left-4 z-20">
         <button
           onClick={() => setShowHelp(!showHelp)}
@@ -258,9 +291,9 @@ export const GraphCanvas: React.FC = () => {
         <button
           onClick={() => setIsDrawMode(false)}
           className={`px-6 py-3 text-sm font-bold rounded-full transition-all flex items-center gap-2 ${
-            !isDrawMode
-              ? "bg-blue-500 text-white shadow-md scale-105"
-              : "text-slate-500 hover:bg-slate-100"
+            isDrawMode
+              ? "text-slate-500 hover:bg-slate-100"
+              : "bg-blue-500 text-white shadow-md scale-105"
           }`}
         >
           Estados

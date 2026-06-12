@@ -9,9 +9,108 @@ const initialNode: ElementDefinition = {
   classes: "initial",
 };
 
+const calculateSinkInjection = (
+  elements: ElementDefinition[],
+): ElementDefinition[] => {
+  const nodes = elements.filter((el) => el.group === "nodes");
+  const edges = elements.filter((el) => el.group === "edges");
+  const ALPHABET = ["0", "1"];
+
+  const existingSink = nodes.find((n) => n.data.isSink);
+  // Eliminamos el `as string` y el `!`, dejamos que TS infiera
+  let sinkId = existingSink ? existingSink.data.id : undefined;
+  let needsSink = false;
+  const newElements = [...elements];
+
+  const outgoingTransitions: Record<string, Set<string>> = {};
+
+  for (const n of nodes) {
+    if (n.data.id) outgoingTransitions[n.data.id] = new Set();
+  }
+
+  for (const e of edges) {
+    if (e.data.source && e.data.label !== undefined) {
+      outgoingTransitions[e.data.source].add(String(e.data.label));
+    }
+  }
+
+  for (const node of nodes) {
+    const nodeId = node.data.id;
+    if (!nodeId) continue;
+
+    const transitions = outgoingTransitions[nodeId];
+
+    for (const symbol of ALPHABET) {
+      if (!transitions?.has(symbol)) {
+        needsSink = true;
+        if (!sinkId) sinkId = "q_sink";
+
+        newElements.push({
+          group: "edges",
+          data: {
+            id: `e-${nodeId}-${sinkId}-${symbol}-${Date.now()}`,
+            source: nodeId,
+            target: sinkId,
+            label: symbol,
+          },
+        });
+      }
+    }
+  }
+
+  if (needsSink && sinkId && !nodes.some((n) => n.data.id === sinkId)) {
+    let targetX = 150;
+    let targetY = 300;
+
+    if (nodes.length > 0) {
+      let sumX = 0;
+      let maxY = 0;
+      let count = 0;
+
+      for (const n of nodes) {
+        if (n.position) {
+          sumX += n.position.x;
+          if (n.position.y > maxY) maxY = n.position.y;
+          count++;
+        }
+      }
+
+      if (count > 0) {
+        targetX = sumX / count;
+        targetY = maxY + 120;
+      }
+    }
+
+    newElements.push({
+      group: "nodes",
+      data: {
+        id: sinkId,
+        label: "Pozo",
+        isInitial: false,
+        isFinal: false,
+        isSink: true,
+      },
+      position: { x: targetX, y: targetY },
+      classes: "sink-node",
+    });
+
+    for (const symbol of ALPHABET) {
+      newElements.push({
+        group: "edges",
+        data: {
+          id: `e-${sinkId}-${sinkId}-${symbol}-${Date.now()}`,
+          source: sinkId,
+          target: sinkId,
+          label: symbol,
+        },
+      });
+    }
+  }
+  return newElements;
+};
 export const useAutomataStore = create<AutomataState>((set) => ({
   elements: [initialNode],
-  nodeCount: 1, // Se mantiene por compatibilidad con la interfaz
+  nodeCount: 1,
 
   addNode: (position) =>
     set((state) => {
@@ -33,44 +132,51 @@ export const useAutomataStore = create<AutomataState>((set) => ({
       };
 
       const newElements = [...state.elements, newNode];
-      
-      return { 
+
+      return {
         elements: newElements,
-        // Actualiza el contador real de nodos por si acaso
-        nodeCount: newElements.filter(el => el.group === "nodes").length 
+        nodeCount: newElements.filter((el) => el.group === "nodes").length,
       };
     }),
 
   addEdge: (sourceId, targetId) =>
     set((state) => {
-      // 1. Obtener solo las aristas salientes del nodo origen
-      const outgoingEdges = state.elements.filter(
-        (el) => el.group === "edges" && el.data.source === sourceId
+      const sourceExists = state.elements.some(
+        (el) => el.group === "nodes" && el.data.id === sourceId,
+      );
+      const targetExists = state.elements.some(
+        (el) => el.group === "nodes" && el.data.id === targetId,
       );
 
-      // 2. Ver qué símbolos ya se están usando en este nodo
-      const usedSymbols = outgoingEdges.map((el) => el.data.label);
-
-      // 3. Validar determinismo: Alfabeto {0, 1} usando 'as const' para tipado estricto
-      const ALPHABET = ["0", "1"] as const;
-      const availableSymbols = ALPHABET.filter(
-        (sym) => !usedSymbols.includes(sym)
-      );
-
-      // 4. Si ya no hay símbolos disponibles, bloqueamos la creación
-      if (availableSymbols.length === 0) {
-        console.warn("El nodo ya tiene todas las transiciones posibles (0 y 1).");
-        return state; 
+      if (!sourceExists || !targetExists) {
+        return state;
       }
 
-      // 5. Crear la nueva arista con el primer símbolo disponible
+      const outgoingEdges = state.elements.filter(
+        (el) => el.group === "edges" && el.data.source === sourceId,
+      );
+
+      const usedSymbols = new Set(
+        outgoingEdges.map((el) => String(el.data.label)),
+      );
+
+      const ALPHABET = ["0", "1"] as const;
+      const availableSymbols = ALPHABET.filter((sym) => !usedSymbols.has(sym));
+
+      if (availableSymbols.length === 0) {
+        console.warn(
+          "El nodo ya tiene todas las transiciones posibles (0 y 1).",
+        );
+        return state;
+      }
+
       const newEdge: ElementDefinition = {
         group: "edges",
         data: {
           id: `e-${sourceId}-${targetId}-${Date.now()}`,
           source: sourceId,
           target: targetId,
-          label: availableSymbols[0], // TypeScript ahora sabe que es exactamente '0' o '1'
+          label: availableSymbols[0],
         },
       };
 
@@ -84,9 +190,9 @@ export const useAutomataStore = create<AutomataState>((set) => ({
         (el) =>
           el.data.id !== id && el.data.source !== id && el.data.target !== id,
       );
-      return { 
+      return {
         elements: filteredElements,
-        nodeCount: filteredElements.filter(el => el.group === "nodes").length
+        nodeCount: filteredElements.filter((el) => el.group === "nodes").length,
       };
     }),
 
@@ -94,12 +200,20 @@ export const useAutomataStore = create<AutomataState>((set) => ({
     set((state) => {
       const updatedElements = state.elements.map((el) => {
         if (el.group === "nodes" && el.data.id === id) {
+          if (el.data.isSink) {
+            console.warn(
+              "El estado de pozo no puede ser un estado de aceptación.",
+            );
+            return el;
+          }
+
           const isFinal = !el.data.isFinal;
           return {
             ...el,
             data: { ...el.data, isFinal },
-            classes:
-              `${el.data.isInitial ? "initial" : ""} ${isFinal ? "final" : ""}`.trim(),
+            classes: `${el.data.isInitial ? "initial" : ""} ${
+              isFinal ? "final" : ""
+            }`.trim(),
           };
         }
         return el;
@@ -110,20 +224,19 @@ export const useAutomataStore = create<AutomataState>((set) => ({
   updateEdgeSymbol: (edgeId, newSymbol) =>
     set((state) => {
       const edgeToUpdate = state.elements.find(
-        (el) => el.group === "edges" && el.data.id === edgeId
+        (el) => el.group === "edges" && el.data.id === edgeId,
       );
-      
+
       if (!edgeToUpdate) return state;
 
       const source = edgeToUpdate.data.source;
 
-      // Verificar que el nuevo símbolo no choque con otra arista del MISMO nodo
       const conflict = state.elements.some(
         (el) =>
           el.group === "edges" &&
           el.data.source === source &&
           el.data.label === newSymbol &&
-          el.data.id !== edgeId
+          el.data.id !== edgeId,
       );
 
       if (conflict) {
@@ -131,7 +244,6 @@ export const useAutomataStore = create<AutomataState>((set) => ({
         return state;
       }
 
-      // Aplicar el cambio si no hay conflictos
       const updatedElements = state.elements.map((el) => {
         if (el.group === "edges" && el.data.id === edgeId) {
           return {
@@ -143,5 +255,60 @@ export const useAutomataStore = create<AutomataState>((set) => ({
       });
 
       return { elements: updatedElements };
+    }),
+
+  pruneUnreachableNodes: () =>
+    set((state) => {
+      const edges = state.elements.filter((el) => el.group === "edges");
+
+      const adjacencyList: Record<string, string[]> = {};
+      for (const edge of edges) {
+        const source = edge.data.source;
+        const target = edge.data.target;
+        if (source && target) {
+          if (!adjacencyList[source]) adjacencyList[source] = [];
+          adjacencyList[source].push(target);
+        }
+      }
+
+      const reachable = new Set<string>();
+      const queue = ["q0"];
+      reachable.add("q0");
+
+      while (queue.length > 0) {
+        const current = queue.shift();
+        if (!current) continue;
+
+        const neighbors = adjacencyList[current] || [];
+        for (const neighbor of neighbors) {
+          if (!reachable.has(neighbor)) {
+            reachable.add(neighbor);
+            queue.push(neighbor);
+          }
+        }
+      }
+
+      const filteredElements = state.elements.filter((el) => {
+        if (el.group === "nodes" && el.data.id)
+          return reachable.has(el.data.id);
+        if (el.group === "edges" && el.data.source && el.data.target) {
+          return reachable.has(el.data.source) && reachable.has(el.data.target);
+        }
+        return false;
+      });
+
+      return {
+        elements: filteredElements,
+        nodeCount: filteredElements.filter((el) => el.group === "nodes").length,
+      };
+    }),
+
+  injectSinkState: () =>
+    set((state) => {
+      const newElements = calculateSinkInjection(state.elements);
+      return {
+        elements: newElements,
+        nodeCount: newElements.filter((el) => el.group === "nodes").length,
+      };
     }),
 }));
