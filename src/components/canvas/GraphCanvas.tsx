@@ -4,7 +4,7 @@ import cytoscape from "cytoscape";
 import type { Core, EventObject, StylesheetStyle } from "cytoscape";
 import edgehandles from "cytoscape-edgehandles";
 import { useAutomataStore } from "../../store/useAutomataStore";
-import { minimizeDFA } from "../../core/automatas/myhillNerode";
+import { minimizeDFA } from "../../core/automatas/MyhillNerode";
 
 cytoscape.use(edgehandles);
 
