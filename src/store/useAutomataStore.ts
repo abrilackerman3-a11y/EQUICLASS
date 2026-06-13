@@ -17,7 +17,6 @@ const calculateSinkInjection = (
   const ALPHABET = ["0", "1"];
 
   const existingSink = nodes.find((n) => n.data.isSink);
-  // Eliminamos el `as string` y el `!`, dejamos que TS infiera
   let sinkId = existingSink ? existingSink.data.id : undefined;
   let needsSink = false;
   const newElements = [...elements];
@@ -108,9 +107,18 @@ const calculateSinkInjection = (
   }
   return newElements;
 };
-export const useAutomataStore = create<AutomataState>((set) => ({
+export const useAutomataStore = create<AutomataState>((set, get) => ({
   elements: [initialNode],
   nodeCount: 1,
+
+  minimizedElements: [],
+  equivalenceClasses: [],
+
+  prepareForMinimization: () => {
+    const { pruneUnreachableNodes, injectSinkState } = get();
+    pruneUnreachableNodes();
+    injectSinkState();
+  },
 
   addNode: (position) =>
     set((state) => {
@@ -196,6 +204,14 @@ export const useAutomataStore = create<AutomataState>((set) => ({
       };
     }),
 
+  clearAutomata: () =>
+    set(() => ({
+      elements: [initialNode],
+      nodeCount: 1,
+      minimizedElements: [],
+      equivalenceClasses: [],
+    })),
+
   toggleFinalState: (id) =>
     set((state) => {
       const updatedElements = state.elements.map((el) => {
@@ -265,6 +281,7 @@ export const useAutomataStore = create<AutomataState>((set) => ({
       for (const edge of edges) {
         const source = edge.data.source;
         const target = edge.data.target;
+
         if (source && target) {
           if (!adjacencyList[source]) adjacencyList[source] = [];
           adjacencyList[source].push(target);
@@ -309,6 +326,117 @@ export const useAutomataStore = create<AutomataState>((set) => ({
       return {
         elements: newElements,
         nodeCount: newElements.filter((el) => el.group === "nodes").length,
+      };
+    }),
+  setMinimizedData: (classes: string[][]) =>
+    set((state) => {
+      const originalNodes = state.elements.filter((el) => el.group === "nodes");
+      const originalEdges = state.elements.filter((el) => el.group === "edges");
+
+      const newMinimizedElements: ElementDefinition[] = [];
+      const nodeToClassMap: Record<string, string> = {};
+
+      const PALETTE = [
+        { bg: "#e0e7ff", border: "#818cf8", text: "#4338ca" },
+        { bg: "#fce7f3", border: "#f472b6", text: "#be185d" },
+        { bg: "#fef3c7", border: "#fbbf24", text: "#b45309" },
+        { bg: "#e0f2fe", border: "#38bdf8", text: "#0369a1" },
+        { bg: "#ccfbf1", border: "#2dd4bf", text: "#0f766e" },
+        { bg: "#f3e8ff", border: "#c084fc", text: "#7e22ce" },
+      ];
+
+      let classIndex = 0;
+
+      classes.forEach((eqClass) => {
+        const isOnlySink = eqClass.length === 1 && eqClass[0] === "q_sink";
+
+        if (!isOnlySink) {
+          const parentId = `eq-class-${classIndex}`;
+          const color = PALETTE[classIndex % PALETTE.length];
+
+          const hasInitial = eqClass.includes("q0");
+          const hasFinal = originalNodes.some(
+            (n) => eqClass.includes(n.data.id!) && n.data.isFinal,
+          );
+
+          let cyClasses = "equivalence-group";
+          if (hasInitial) cyClasses += " initial-class";
+          if (hasFinal) cyClasses += " final-class";
+
+          newMinimizedElements.push({
+            group: "nodes",
+            data: {
+              id: parentId,
+              label: `Clase ${classIndex}`,
+              bgColor: color.bg,
+              borderColor: color.border,
+              textColor: color.text,
+            },
+            classes: cyClasses,
+          });
+
+          eqClass.forEach((nodeId) => {
+            nodeToClassMap[nodeId] = parentId;
+            const node = originalNodes.find((n) => n.data.id === nodeId);
+            if (node) {
+              newMinimizedElements.push({
+                ...node,
+                data: { ...node.data, parent: parentId },
+                position: node.position ? { ...node.position } : undefined,
+              });
+            }
+          });
+
+          classIndex++;
+        } else {
+          const sinkId = eqClass[0];
+          nodeToClassMap[sinkId] = sinkId;
+          const sinkNode = originalNodes.find((n) => n.data.id === sinkId);
+          if (sinkNode) {
+            newMinimizedElements.push({
+              ...sinkNode,
+              data: { ...sinkNode.data },
+              position: sinkNode.position
+                ? { ...sinkNode.position }
+                : undefined,
+            });
+          }
+        }
+      });
+
+      const createdEdges = new Set<string>();
+
+      originalEdges.forEach((edge) => {
+        const source = edge.data.source;
+        const target = edge.data.target;
+        const label = edge.data.label;
+
+        if (source && target && label !== undefined) {
+          const sourceClass = nodeToClassMap[source];
+          const targetClass = nodeToClassMap[target];
+
+          if (sourceClass && targetClass) {
+            const edgeKey = `${sourceClass}-${targetClass}-${label}`;
+
+            if (!createdEdges.has(edgeKey)) {
+              createdEdges.add(edgeKey);
+              newMinimizedElements.push({
+                group: "edges",
+                data: {
+                  id: `e-${sourceClass}-${targetClass}-${label}`,
+                  source: sourceClass,
+                  target: targetClass,
+                  label: label,
+                },
+              });
+            }
+          }
+        }
+      });
+
+      return {
+        equivalenceClasses: classes,
+        minimizedElements: newMinimizedElements,
       };
     }),
 }));

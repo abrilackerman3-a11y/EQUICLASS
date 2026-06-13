@@ -1,7 +1,7 @@
-import { EditorView } from "./views/EditorView";
+import { SplitView } from "./views/SplitView";
 
 function App() {
-  return <EditorView />;
+  return <SplitView />;
 }
 
 export default App;

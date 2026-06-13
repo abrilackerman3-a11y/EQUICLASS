@@ -4,7 +4,7 @@ import cytoscape from "cytoscape";
 import type { Core, EventObject, StylesheetStyle } from "cytoscape";
 import edgehandles from "cytoscape-edgehandles";
 import { useAutomataStore } from "../../store/useAutomataStore";
-import { EdgeContextMenu } from "./EdgeMenu";
+import { minimizeDFA } from "../../core/automatas/myhillNerode";
 
 cytoscape.use(edgehandles);
 
@@ -51,8 +51,9 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
   {
     selector: "node.final",
     style: {
+      "border-style": "double",
       "border-width": 4,
-      "border-color": "#4552ff",
+      "border-color": "#303030",
     },
   },
   {
@@ -115,9 +116,24 @@ export const GraphCanvas: React.FC = () => {
     addEdge,
     removeElement,
     toggleFinalState,
-    pruneUnreachableNodes,
-    injectSinkState,
+    updateEdgeSymbol,
+    clearAutomata,
+    prepareForMinimization,
+    setMinimizedData,
+    minimizedElements,
   } = useAutomataStore();
+
+  const isMinimized = minimizedElements.length > 0;
+
+  const handleMinimizationTrigger = () => {
+    prepareForMinimization();
+
+    const latestElements = useAutomataStore.getState().elements;
+
+    const equivalenceClasses = minimizeDFA(latestElements);
+
+    setMinimizedData(equivalenceClasses);
+  };
 
   const cyRef = useRef<Core | null>(null);
   const ehRef = useRef<EdgeHandlesInstance | null>(null);
@@ -127,28 +143,12 @@ export const GraphCanvas: React.FC = () => {
   const [showHelp, setShowHelp] = useState(false);
   const isDrawModeRef = useRef(false);
 
-  const [menuState, setMenuState] = useState<{
-    edgeId: string;
-    position: { x: number; y: number };
-  } | null>(null);
-
   useEffect(() => {
     isDrawModeRef.current = isDrawMode;
     if (cyRef.current) {
       cyRef.current.autoungrabify(isDrawMode);
     }
   }, [isDrawMode]);
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (document.activeElement?.tagName === "INPUT") return;
-      if (e.key.toLowerCase() === "m" || e.key === "Escape")
-        setIsDrawMode(false);
-      else if (e.key.toLowerCase() === "t") setIsDrawMode(true);
-    };
-    globalThis.addEventListener("keydown", handleKeyDown);
-    return () => globalThis.removeEventListener("keydown", handleKeyDown);
-  }, []);
 
   const handleCyInit = (cy: Core) => {
     if (cyRef.current === cy) return;
@@ -198,27 +198,46 @@ export const GraphCanvas: React.FC = () => {
     });
 
     cy.on("tap", "edge", (evt: EventObject) => {
-      console.log("EDGE TAPPED", evt.target.id());
-      if (isDrawModeRef.current) return;
-
       const edge = evt.target;
-      const renderedPos = edge.renderedMidpoint();
-      const containerRect = cy.container()?.getBoundingClientRect();
-      if (!containerRect) return;
+      const edgeId = edge.id();
+      const currentSymbol = edge.data("label");
 
-      setMenuState({
-        edgeId: edge.id(),
-        position: {
-          x: containerRect.left + renderedPos.x,
-          y: containerRect.top + renderedPos.y - 10,
-        },
-      });
+      const newSymbol = currentSymbol === "0" ? "1" : "0";
+      updateEdgeSymbol(edgeId, newSymbol);
     });
 
     cy.on("cxttap taphold", "node, edge", (evt: EventObject) => {
       removeElement(evt.target.id());
     });
   };
+
+  useEffect(() => {
+    const container = cyRef.current?.container();
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Solo ajusta el WebGL al contenedor, NO mueve la cámara
+      cyRef.current?.resize();
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (cyRef.current && isMinimized) {
+      setTimeout(() => {
+        if (cyRef.current && cyRef.current.elements().length > 0) {
+          cyRef.current.animate(
+            {
+              fit: { eles: cyRef.current.elements(), padding: 60 },
+            },
+            { duration: 400, easing: "ease-out" },
+          );
+        }
+      }, 700);
+    }
+  }, [isMinimized]);
 
   return (
     <div className="w-full h-full touch-none relative bg-slate-50 overflow-hidden">
@@ -230,25 +249,40 @@ export const GraphCanvas: React.FC = () => {
         userZoomingEnabled={true}
         userPanningEnabled={true}
         boxSelectionEnabled={false}
+        minZoom={0.3}
+        maxZoom={1.2}
       />
 
-      {/* --- BOTONES DE PRUEBA DEL HILO B (NUEVO) --- */}
-      <div className="absolute top-4 right-4 flex flex-col gap-3 z-20">
+      <div
+        className={`absolute top-4 right-4 z-20 flex flex-col items-end gap-3 transition-all duration-700 ease-in-out origin-top-right ${
+          isMinimized
+            ? "scale-75 opacity-80 hover:opacity-100"
+            : "scale-100 opacity-100"
+        }`}
+      >
         <button
-          onClick={pruneUnreachableNodes}
-          className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg shadow-md font-medium transition-colors text-sm"
+          onClick={handleMinimizationTrigger}
+          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-sm"
         >
-          Limpiar Inalcanzables
+          Minimizar
         </button>
+
         <button
-          onClick={injectSinkState}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow-md font-medium transition-colors text-sm"
+          onClick={clearAutomata}
+          title="Limpiar grafo"
+          className="w-11 h-11 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-full shadow-md flex items-center justify-center font-bold text-lg transition-all transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400"
         >
-          Inyectar Estado Pozo
+          L
         </button>
       </div>
 
-      <div className="absolute top-4 left-4 z-20">
+      <div
+        className={`absolute top-4 left-4 z-20 transition-all duration-700 ease-in-out origin-top-left ${
+          isMinimized
+            ? "scale-75 opacity-80 hover:opacity-100"
+            : "scale-100 opacity-100"
+        }`}
+      >
         <button
           onClick={() => setShowHelp(!showHelp)}
           className="w-10 h-10 bg-white rounded-full shadow-md border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
@@ -287,7 +321,13 @@ export const GraphCanvas: React.FC = () => {
         )}
       </div>
 
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur p-1.5 rounded-full shadow-lg border border-slate-200 flex gap-1 z-20">
+      <div
+        className={`absolute left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur p-1.5 rounded-full shadow-lg border border-slate-200 flex gap-1 z-20 transition-all duration-700 ease-in-out origin-bottom ${
+          isMinimized
+            ? "bottom-2 scale-75 opacity-60 hover:opacity-100"
+            : "bottom-8 scale-100 opacity-100"
+        }`}
+      >
         <button
           onClick={() => setIsDrawMode(false)}
           className={`px-6 py-3 text-sm font-bold rounded-full transition-all flex items-center gap-2 ${
@@ -296,7 +336,7 @@ export const GraphCanvas: React.FC = () => {
               : "bg-blue-500 text-white shadow-md scale-105"
           }`}
         >
-          Estados
+          E
         </button>
         <button
           onClick={() => setIsDrawMode(true)}
@@ -306,17 +346,9 @@ export const GraphCanvas: React.FC = () => {
               : "text-slate-500 hover:bg-slate-100"
           }`}
         >
-          Transiciones
+          T
         </button>
       </div>
-
-      {menuState && (
-        <EdgeContextMenu
-          edgeId={menuState.edgeId}
-          position={menuState.position}
-          onClose={() => setMenuState(null)}
-        />
-      )}
     </div>
   );
 };
