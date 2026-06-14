@@ -2,6 +2,8 @@ import React from "react";
 import { GraphCanvas } from "../components/canvas/GraphCanvas";
 import { MinimizedCanvas } from "../components/canvas/MinimizedCanvas";
 import { useAutomataStore } from "../store/useAutomataStore";
+// 1. IMPORTAMOS LOS CONTROLES DESDE LA RUTA CORRECTA
+import { SimulationControls } from "../components/canvas/simulation/SimulationControls";
 
 export const SplitView: React.FC = () => {
   const { minimizedElements } = useAutomataStore();
@@ -15,10 +17,9 @@ export const SplitView: React.FC = () => {
           <h1 className="text-base font-bold text-slate-800">Minimizador de AFD</h1>
           <p className="text-xs text-slate-500 hidden sm:block">Myhill-Nerode paso a paso</p>
         </div>
-
-
       </div>
 
+      {/* --- LIENZOS DIVIDIDOS --- */}
       <div className="flex-1 w-full flex flex-col md:flex-row overflow-hidden">
         
         <div 
@@ -37,6 +38,10 @@ export const SplitView: React.FC = () => {
           <MinimizedCanvas />
         </div>
       </div>
+
+      {/* 2. INYECTAMOS LA BARRA DE SIMULACIÓN AQUÍ (Abajo de los gráficos) */}
+      <SimulationControls />
+
     </div>
   );
 };
