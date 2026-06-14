@@ -4,7 +4,7 @@ import cytoscape from "cytoscape";
 import type { Core, EventObject, StylesheetStyle } from "cytoscape";
 import edgehandles from "cytoscape-edgehandles";
 import { useAutomataStore } from "../../store/useAutomataStore";
-import { minimizeDFA } from "../../core/automatas/MyhillNerode";
+import { minimizeDFA } from "../../core/automatas/myhillNerode";
 
 cytoscape.use(edgehandles);
 
@@ -107,7 +107,7 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
       color: "#4b5563",
     },
   },
-  // --- CLASES DINÁMICAS PARA LA SIMULACIÓN PASO A PASO ---
+
   {
     selector: "node.active",
     style: {
@@ -119,7 +119,7 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
   {
     selector: "edge.active",
     style: {
-      "width": "4px",
+      width: "4px",
       "line-color": "#eab308",
       "target-arrow-color": "#eab308",
       color: "#ca8a04",
@@ -142,8 +142,12 @@ export const GraphCanvas: React.FC = () => {
   } = useAutomataStore();
 
   // Traer los estados de simulación del store para la reactividad
-  const activeNodeOriginal = useAutomataStore((state) => state.simulation.activeNodeOriginal);
-  const activeEdgeOriginal = useAutomataStore((state) => state.simulation.activeEdgeOriginal);
+  const activeNodeOriginal = useAutomataStore(
+    (state) => state.simulation.activeNodeOriginal,
+  );
+  const activeEdgeOriginal = useAutomataStore(
+    (state) => state.simulation.activeEdgeOriginal,
+  );
 
   const isMinimized = minimizedElements.length > 0;
 
@@ -177,8 +181,10 @@ export const GraphCanvas: React.FC = () => {
     cyRef.current.elements().removeClass("active");
 
     // Inyectar clases al nodo y arista correspondiente si existen
-    if (activeNodeOriginal) cyRef.current.$(`#${activeNodeOriginal}`).addClass("active");
-    if (activeEdgeOriginal) cyRef.current.$(`#${activeEdgeOriginal}`).addClass("active");
+    if (activeNodeOriginal)
+      cyRef.current.$(`#${activeNodeOriginal}`).addClass("active");
+    if (activeEdgeOriginal)
+      cyRef.current.$(`#${activeEdgeOriginal}`).addClass("active");
   }, [activeNodeOriginal, activeEdgeOriginal]);
 
   const handleCyInit = (cy: Core) => {
@@ -204,7 +210,10 @@ export const GraphCanvas: React.FC = () => {
     });
 
     cy.on("tap", "node", (evt: EventObject) => {
-      if (isDrawModeRef.current) return; // Si está conectando, no hace nada estático
+      if (isDrawModeRef.current) {
+        addEdge(evt.target.id(), evt.target.id());
+        return;
+      }
 
       const now = Date.now();
       if (now - lastNodeTap.current < 300) {
