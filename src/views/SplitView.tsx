@@ -10,8 +10,7 @@ export const SplitView: React.FC = () => {
   const isMinimized = minimizedElements.length > 0;
 
   return (
-    // Fondo principal oscuro (Crust)
-    <div className="w-full h-screen flex flex-col overflow-hidden bg-[#11111b]">
+    <div className="w-full h-[100dvh] flex flex-col overflow-hidden bg-[#11111b]">
       {/* Cabecera (Mantle) */}
       <div className="w-full bg-[#181825] border-b border-[#313244] px-4 py-3 flex items-center justify-between shadow-sm z-30 shrink-0">
         <div>

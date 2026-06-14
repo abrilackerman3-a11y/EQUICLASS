@@ -132,6 +132,23 @@ const minimizedStylesheet: StylesheetStyle[] = [
       "loop-sweep": "45deg",
     },
   },
+  {
+    selector: "node.active",
+    style: {
+      "background-color": "#f9e2af", // Yellow
+      "border-color": "#fab387", // Peach
+      "border-width": "4px",
+    },
+  },
+  {
+    selector: "edge.active",
+    style: {
+      width: "4px",
+      "line-color": "#f9e2af", // Yellow
+      "target-arrow-color": "#f9e2af",
+      color: "#f9e2af",
+    },
+  },
 ];
 
 export const MinimizedCanvas: React.FC = () => {
