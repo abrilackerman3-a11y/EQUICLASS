@@ -107,6 +107,24 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
       color: "#4b5563",
     },
   },
+  // --- CLASES DINÁMICAS PARA LA SIMULACIÓN PASO A PASO ---
+  {
+    selector: "node.active",
+    style: {
+      "background-color": "#fef08a",
+      "border-color": "#eab308",
+      "border-width": "4px",
+    },
+  },
+  {
+    selector: "edge.active",
+    style: {
+      "width": "4px",
+      "line-color": "#eab308",
+      "target-arrow-color": "#eab308",
+      color: "#ca8a04",
+    },
+  },
 ];
 
 export const GraphCanvas: React.FC = () => {
@@ -123,15 +141,16 @@ export const GraphCanvas: React.FC = () => {
     minimizedElements,
   } = useAutomataStore();
 
+  // Traer los estados de simulación del store para la reactividad
+  const activeNodeOriginal = useAutomataStore((state) => state.simulation.activeNodeOriginal);
+  const activeEdgeOriginal = useAutomataStore((state) => state.simulation.activeEdgeOriginal);
+
   const isMinimized = minimizedElements.length > 0;
 
   const handleMinimizationTrigger = () => {
     prepareForMinimization();
-
     const latestElements = useAutomataStore.getState().elements;
-
     const equivalenceClasses = minimizeDFA(latestElements);
-
     setMinimizedData(equivalenceClasses);
   };
 
@@ -149,6 +168,18 @@ export const GraphCanvas: React.FC = () => {
       cyRef.current.autoungrabify(isDrawMode);
     }
   }, [isDrawMode]);
+
+  // useEffect REACTIVO PARA PINTAR NODOS Y ARISTAS EN TIEMPO REAL
+  useEffect(() => {
+    if (!cyRef.current) return;
+
+    // Limpiar clases activas previas
+    cyRef.current.elements().removeClass("active");
+
+    // Inyectar clases al nodo y arista correspondiente si existen
+    if (activeNodeOriginal) cyRef.current.$(`#${activeNodeOriginal}`).addClass("active");
+    if (activeEdgeOriginal) cyRef.current.$(`#${activeEdgeOriginal}`).addClass("active");
+  }, [activeNodeOriginal, activeEdgeOriginal]);
 
   const handleCyInit = (cy: Core) => {
     if (cyRef.current === cy) return;
@@ -173,10 +204,8 @@ export const GraphCanvas: React.FC = () => {
     });
 
     cy.on("tap", "node", (evt: EventObject) => {
-      if (isDrawModeRef.current) {
-        addEdge(evt.target.id(), evt.target.id());
-        return;
-      }
+      if (isDrawModeRef.current) return; // Si está conectando, no hace nada estático
+
       const now = Date.now();
       if (now - lastNodeTap.current < 300) {
         toggleFinalState(evt.target.id());
@@ -216,7 +245,6 @@ export const GraphCanvas: React.FC = () => {
     if (!container) return;
 
     const resizeObserver = new ResizeObserver(() => {
-      // Solo ajusta el WebGL al contenedor, NO mueve la cámara
       cyRef.current?.resize();
     });
 

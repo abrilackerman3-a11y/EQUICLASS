@@ -22,6 +22,20 @@ export interface GraphElement<T> {
   group?: "nodes" | "edges";
 }
 
+// NUEVOS TIPOS DE SIMULACIÓN
+export type SimulationStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'ACCEPTED' | 'REJECTED';
+
+export interface SimulationState {
+  inputString: string;
+  currentIndex: number;
+  activeNodeOriginal: string | null;
+  activeNodeMinimized: string | null;
+  activeEdgeOriginal: string | null;
+  activeEdgeMinimized: string | null;
+  status: SimulationStatus;
+}
+
+// Tu interfaz original extendida con el motor de simulación
 export interface AutomataState {
   elements: ElementDefinition[];
   nodeCount: number;
@@ -40,4 +54,11 @@ export interface AutomataState {
   injectSinkState: () => void;
   prepareForMinimization: () => void;
   setMinimizedData: (classes: string[][]) => void;
+
+  // NUEVOS ESTADOS Y ACCIONES DE SIMULACIÓN
+  simulation: SimulationState;
+  startSimulation: (input: string) => void;
+  nextStep: () => void;
+  previousStep: () => void;
+  resetSimulation: () => void;
 }

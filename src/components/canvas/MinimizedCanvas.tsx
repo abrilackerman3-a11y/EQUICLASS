@@ -112,17 +112,51 @@ const minimizedStylesheet: StylesheetStyle[] = [
       "loop-sweep": "45deg",
     },
   },
+  // --- CLASES DINÁMICAS PARA LA SIMULACIÓN PASO A PASO ---
+  {
+    selector: "node.active",
+    style: {
+      "background-color": "#fef08a",
+      "border-color": "#eab308",
+      "border-width": "4px",
+    },
+  },
+  {
+    selector: "edge.active",
+    style: {
+      "width": "4px",
+      "line-color": "#eab308",
+      "target-arrow-color": "#eab308",
+      color: "#ca8a04",
+    },
+  },
 ];
 
 export const MinimizedCanvas: React.FC = () => {
   const { minimizedElements } = useAutomataStore();
   const cyRef = useRef<Core | null>(null);
 
+  // Traer los estados de simulación minimizados del store para la reactividad
+  const activeNodeMinimized = useAutomataStore((state) => state.simulation.activeNodeMinimized);
+  const activeEdgeMinimized = useAutomataStore((state) => state.simulation.activeEdgeMinimized);
+
   const handleCyInit = (cy: Core) => {
     if (cyRef.current === cy) return;
     cyRef.current = cy;
     cy.boxSelectionEnabled(false);
   };
+
+  // EFFECT REACTIVO PARA ILUMINAR EL AFD MINIMIZADO EN TIEMPO REAL
+  useEffect(() => {
+    if (!cyRef.current) return;
+
+    // Limpiar clases activas de pasos anteriores
+    cyRef.current.elements().removeClass("active");
+
+    // Inyectar clase active si se encuentra el ID en el motor
+    if (activeNodeMinimized) cyRef.current.$(`#${activeNodeMinimized}`).addClass("active");
+    if (activeEdgeMinimized) cyRef.current.$(`#${activeEdgeMinimized}`).addClass("active");
+  }, [activeNodeMinimized, activeEdgeMinimized]);
 
   useEffect(() => {
     const container = cyRef.current?.container();

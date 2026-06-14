@@ -9,6 +9,16 @@ const initialNode: ElementDefinition = {
   classes: "initial",
 };
 
+const initialSimulationState = {
+  inputString: '',
+  currentIndex: -1,
+  activeNodeOriginal: null,
+  activeNodeMinimized: null,
+  activeEdgeOriginal: null,
+  activeEdgeMinimized: null,
+  status: 'IDLE' as const,
+};
+
 const calculateSinkInjection = (
   elements: ElementDefinition[],
 ): ElementDefinition[] => {
@@ -107,12 +117,15 @@ const calculateSinkInjection = (
   }
   return newElements;
 };
+
 export const useAutomataStore = create<AutomataState>((set, get) => ({
   elements: [initialNode],
   nodeCount: 1,
 
   minimizedElements: [],
   equivalenceClasses: [],
+
+  simulation: initialSimulationState,
 
   prepareForMinimization: () => {
     const { pruneUnreachableNodes, injectSinkState } = get();
@@ -157,7 +170,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
       );
 
       if (!sourceExists || !targetExists) {
-        return state;
+        return {};
       }
 
       const outgoingEdges = state.elements.filter(
@@ -175,7 +188,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
         console.warn(
           "El nodo ya tiene todas las transiciones posibles (0 y 1).",
         );
-        return state;
+        return {};
       }
 
       const newEdge: ElementDefinition = {
@@ -193,7 +206,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
 
   removeElement: (id) =>
     set((state) => {
-      if (id === "q0") return state;
+      if (id === "q0") return {};
       const filteredElements = state.elements.filter(
         (el) =>
           el.data.id !== id && el.data.source !== id && el.data.target !== id,
@@ -210,6 +223,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
       nodeCount: 1,
       minimizedElements: [],
       equivalenceClasses: [],
+      simulation: initialSimulationState,
     })),
 
   toggleFinalState: (id) =>
@@ -243,7 +257,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
         (el) => el.group === "edges" && el.data.id === edgeId,
       );
 
-      if (!edgeToUpdate) return state;
+      if (!edgeToUpdate) return {};
 
       const source = edgeToUpdate.data.source;
 
@@ -257,7 +271,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
 
       if (conflict) {
         console.warn("Símbolo ya utilizado en otra transición de este nodo.");
-        return state;
+        return {};
       }
 
       const updatedElements = state.elements.map((el) => {
@@ -328,6 +342,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
         nodeCount: newElements.filter((el) => el.group === "nodes").length,
       };
     }),
+
   setMinimizedData: (classes: string[][]) =>
     set((state) => {
       const originalNodes = state.elements.filter((el) => el.group === "nodes");
@@ -439,4 +454,96 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
         minimizedElements: newMinimizedElements,
       };
     }),
+
+  startSimulation: (input: string) => {
+    const { elements, minimizedElements } = get();
+
+    const initNodeOrig = elements.find(el => el.group === "nodes" && el.data.isInitial);
+    
+    // CORRECCIÓN AQUÍ: Buscar el nodo por clase o por id de grupo equivalente para evitar nulos
+    const initNodeMin = minimizedElements.find(el => 
+      el.group === "nodes" && 
+      (el.classes?.includes("initial-class") || el.data.id === "eq-class-0")
+    );
+
+    if (!initNodeOrig) {
+      console.error("No se encontró el estado inicial en el autómata original.");
+      return;
+    }
+
+    set(() => ({
+      simulation: {
+        inputString: input,
+        currentIndex: 0,
+        activeNodeOriginal: initNodeOrig.data.id || null,
+        activeNodeMinimized: initNodeMin ? (initNodeMin.data.id || null) : null,
+        activeEdgeOriginal: null,
+        activeEdgeMinimized: null,
+        status: 'RUNNING',
+      },
+    }));
+  },
+
+  nextStep: () => {
+    const { simulation, elements, minimizedElements } = get();
+    const { inputString, currentIndex, activeNodeOriginal, activeNodeMinimized } = simulation;
+
+    if (currentIndex >= inputString.length) {
+      const currNodeOrig = elements.find(el => el.group === "nodes" && el.data.id === activeNodeOriginal);
+      const isAccepted = currNodeOrig?.data?.isFinal || false;
+
+      set((state) => ({
+        simulation: {
+          ...state.simulation,
+          status: isAccepted ? 'ACCEPTED' : 'REJECTED',
+          activeEdgeOriginal: null,
+          activeEdgeMinimized: null,
+        },
+      }));
+      return;
+    }
+
+    const symbol = inputString[currentIndex];
+
+    const edgeOrig = elements.find(el => 
+      el.group === "edges" && el.data.source === activeNodeOriginal && String(el.data.label) === symbol
+    );
+    
+    // CORRECCIÓN AQUÍ: Validar transiciones buscando tanto de nodos hijos como de padres compuestos
+    const edgeMin = minimizedElements.find(el => 
+      el.group === "edges" && el.data.source === activeNodeMinimized && String(el.data.label) === symbol
+    );
+
+    set((state) => ({
+      simulation: {
+        ...state.simulation,
+        currentIndex: currentIndex + 1,
+        activeNodeOriginal: edgeOrig ? (edgeOrig.data.target || activeNodeOriginal) : activeNodeOriginal,
+        activeNodeMinimized: edgeMin ? (edgeMin.data.target || activeNodeMinimized) : activeNodeMinimized,
+        activeEdgeOriginal: edgeOrig ? (edgeOrig.data.id || null) : null,
+        activeEdgeMinimized: edgeMin ? (edgeMin.data.id || null) : null,
+      },
+    }));
+  },
+
+  previousStep: () => {
+    const { simulation, startSimulation, nextStep } = get();
+    const targetIndex = simulation.currentIndex - 1;
+
+    if (targetIndex < 0) {
+      get().resetSimulation();
+      return;
+    }
+
+    const targetString = simulation.inputString;
+    
+    startSimulation(targetString);
+    for (let i = 0; i < targetIndex; i++) {
+      nextStep();
+    }
+  },
+
+  resetSimulation: () => {
+    set(() => ({ simulation: initialSimulationState }));
+  },
 }));
