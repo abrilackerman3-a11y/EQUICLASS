@@ -12,12 +12,13 @@ const minimizedStylesheet: StylesheetStyle[] = [
     selector: "node[label]",
     style: {
       "overlay-opacity": 0,
-      "background-color": "#4f46e5",
+      "background-color": "#f5c2e7",
       label: "data(label)",
-      color: "#ffffff",
+      color: "#11111b",
       "text-valign": "center",
       "text-halign": "center",
       "font-size": "14px",
+      "font-weight": "bold",
       width: "45px",
       height: "45px",
     },
@@ -25,9 +26,9 @@ const minimizedStylesheet: StylesheetStyle[] = [
   {
     selector: "node.initial",
     style: {
-      "background-color": "#10b981",
+      "background-color": "#89dceb",
       "border-width": 3,
-      "border-color": "#047857",
+      "border-color": "#74c7ec",
     },
   },
   {
@@ -35,7 +36,7 @@ const minimizedStylesheet: StylesheetStyle[] = [
     style: {
       "border-style": "double",
       "border-width": 4,
-      "border-color": "#303030",
+      "border-color": "#cba6f7",
     },
   },
   {
@@ -69,7 +70,7 @@ const minimizedStylesheet: StylesheetStyle[] = [
     selector: "node.initial-class",
     style: {
       "border-width": 4,
-      "border-color": "#10b981",
+      "border-color": "#89dceb",
       "border-style": "dashed",
     },
   },
@@ -83,9 +84,26 @@ const minimizedStylesheet: StylesheetStyle[] = [
   {
     selector: "node.initial-class.final-class",
     style: {
-      "border-color": "#10b981",
+      "border-color": "#89dceb",
       "border-style": "double",
       "border-width": 6,
+    },
+  },
+  {
+    selector: "edge[label]",
+    style: {
+      width: 2,
+      "line-color": "#b4befe",
+      "target-arrow-color": "#b4befe",
+      "target-arrow-shape": "triangle",
+      "curve-style": "bezier",
+      label: "data(label)",
+      "font-size": "14px",
+      color: "#cdd6f4",
+      "text-background-opacity": 1,
+      "text-background-color": "#181825",
+      "text-background-padding": "2px",
+      "text-background-shape": "roundrectangle",
     },
   },
   {
@@ -112,23 +130,6 @@ const minimizedStylesheet: StylesheetStyle[] = [
       "control-point-step-size": 32,
       "loop-direction": "90deg",
       "loop-sweep": "45deg",
-    },
-  },
-  {
-    selector: "node.active",
-    style: {
-      "background-color": "#fef08a",
-      "border-color": "#eab308",
-      "border-width": "4px",
-    },
-  },
-  {
-    selector: "edge.active",
-    style: {
-      width: "4px",
-      "line-color": "#eab308",
-      "target-arrow-color": "#eab308",
-      color: "#ca8a04",
     },
   },
 ];

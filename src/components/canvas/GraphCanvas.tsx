@@ -72,7 +72,7 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
       label: "data(label)",
       "font-size": "14px",
       "text-background-opacity": 1,
-      "text-background-color": "#1e1a4d",
+      "text-background-color": "#1e1e2e",
       color: "#cdd6f4 ",
       "text-background-padding": "2px",
     },
