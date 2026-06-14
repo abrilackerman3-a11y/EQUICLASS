@@ -6,6 +6,11 @@ import edgehandles from "cytoscape-edgehandles";
 import { useAutomataStore } from "../../store/useAutomataStore";
 import { minimizeDFA } from "../../core/automatas/myhillNerode";
 
+import IconState from "../../assets/state.svg?react";
+import IconConnect from "../../assets/connect.svg?react";
+import IconClear from "../../assets/clear.svg?react";
+import IconHelp from "../../assets/help.svg?react";
+
 cytoscape.use(edgehandles);
 
 interface EdgeHandlesInstance {
@@ -30,9 +35,9 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
       "overlay-padding": 0,
       "active-bg-opacity": 0,
       "active-bg-size": 0,
-      "background-color": "#3b82f6",
+      "background-color": "#f5c2e7",
       label: "data(label)",
-      color: "#ffffff",
+      color: "#11111b",
       "text-valign": "center",
       "text-halign": "center",
       "font-size": "14px",
@@ -43,9 +48,9 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
   {
     selector: "node.initial",
     style: {
-      "background-color": "#10b981",
+      "background-color": "#89dceb",
       "border-width": 3,
-      "border-color": "#047857",
+      "border-color": "#74c7ec",
     },
   },
   {
@@ -53,21 +58,22 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
     style: {
       "border-style": "double",
       "border-width": 4,
-      "border-color": "#303030",
+      "border-color": "#cba6f7",
     },
   },
   {
     selector: "edge[label]",
     style: {
       width: 2,
-      "line-color": "#9ca3af",
-      "target-arrow-color": "#9ca3af",
+      "line-color": "#b4befe",
+      "target-arrow-color": "#b4befe",
       "target-arrow-shape": "triangle",
       "curve-style": "bezier",
       label: "data(label)",
       "font-size": "14px",
       "text-background-opacity": 1,
-      "text-background-color": "#ffffff",
+      "text-background-color": "#1e1a4d",
+      color: "#cdd6f4 ",
       "text-background-padding": "2px",
     },
   },
@@ -83,7 +89,7 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
   {
     selector: ".eh-handle",
     style: {
-      "background-color": "#ef4444",
+      "background-color": "#f5c2e7",
       width: 24,
       height: 24,
       shape: "ellipse",
@@ -92,27 +98,27 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
   {
     selector: ".eh-preview, .eh-ghost-edge",
     style: {
-      "line-color": "#ef4444",
-      "target-arrow-color": "#ef4444",
-      "source-arrow-color": "#ef4444",
+      "line-color": "#f5c2e7",
+      "target-arrow-color": "#f5c2e7",
+      "source-arrow-color": "#f5c2e7",
     },
   },
   {
     selector: "node.sink-node",
     style: {
-      "background-color": "#f3f4f6",
+      "background-color": "#181825",
       "border-width": 2,
-      "border-color": "#9ca3af",
+      "border-color": "#6c7086",
       "border-style": "dashed",
-      color: "#4b5563",
+      color: "#bac2de",
     },
   },
 
   {
     selector: "node.active",
     style: {
-      "background-color": "#fef08a",
-      "border-color": "#eab308",
+      "background-color": "#f9e2af",
+      "border-color": "#fab387",
       "border-width": "4px",
     },
   },
@@ -120,9 +126,9 @@ const cytoscapeStylesheet: StylesheetStyle[] = [
     selector: "edge.active",
     style: {
       width: "4px",
-      "line-color": "#eab308",
-      "target-arrow-color": "#eab308",
-      color: "#ca8a04",
+      "line-color": "#f9e2af",
+      "target-arrow-color": "#fab387",
+      color: "#fab387",
     },
   },
 ];
@@ -172,15 +178,9 @@ export const GraphCanvas: React.FC = () => {
       cyRef.current.autoungrabify(isDrawMode);
     }
   }, [isDrawMode]);
-
-  // useEffect REACTIVO PARA PINTAR NODOS Y ARISTAS EN TIEMPO REAL
   useEffect(() => {
     if (!cyRef.current) return;
-
-    // Limpiar clases activas previas
     cyRef.current.elements().removeClass("active");
-
-    // Inyectar clases al nodo y arista correspondiente si existen
     if (activeNodeOriginal)
       cyRef.current.$(`#${activeNodeOriginal}`).addClass("active");
     if (activeEdgeOriginal)
@@ -277,12 +277,13 @@ export const GraphCanvas: React.FC = () => {
   }, [isMinimized]);
 
   return (
-    <div className="w-full h-full touch-none relative bg-slate-50 overflow-hidden">
+    <div className="w-full h-full touch-none relative bg-[#1e1e2e] overflow-hidden">
       <CytoscapeComponent
         elements={elements}
         stylesheet={cytoscapeStylesheet}
         style={{ width: "100%", height: "100%" }}
         cy={handleCyInit}
+        layout={{ name: "preset", fit: true, padding: 30 }}
         userZoomingEnabled={true}
         userPanningEnabled={true}
         boxSelectionEnabled={false}
@@ -291,15 +292,16 @@ export const GraphCanvas: React.FC = () => {
       />
 
       <div
-        className={`absolute top-4 right-4 z-20 flex flex-col items-end gap-3 transition-all duration-700 ease-in-out origin-top-right ${
-          isMinimized
-            ? "scale-75 opacity-80 hover:opacity-100"
-            : "scale-100 opacity-100"
-        }`}
+        className={`absolute top-4 right-4 z-20 flex flex-col items-end gap-3 transition-all duration-700 ease-in-out origin-top-right 
+          ${
+            isMinimized
+              ? "scale-75 opacity-80 hover:opacity-100"
+              : "scale-100 opacity-100"
+          }`}
       >
         <button
           onClick={handleMinimizationTrigger}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl shadow-lg font-bold transition-all transform hover:scale-105 active:scale-95 text-sm"
+          className="bg-[#cba6f7] hover:bg-[#b4befe] text-[#11111b] px-5 py-2.5 rounded-xl shadow-[0_0_5px_rgba(203,166,247,0.4)] font-bold transition-all transform hover:scale-105 active:scale-95 text-sm"
         >
           Minimizar
         </button>
@@ -307,14 +309,14 @@ export const GraphCanvas: React.FC = () => {
         <button
           onClick={clearAutomata}
           title="Limpiar grafo"
-          className="w-11 h-11 bg-white hover:bg-red-50 text-red-600 border border-red-200 rounded-full shadow-md flex items-center justify-center font-bold text-lg transition-all transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400"
+          className="w-11 h-11 bg-[#181825] hover:bg-[#f38ba8]/20 text-[#f38ba8] border border-[#f38ba8]/30 rounded-full shadow-md flex items-center justify-center font-bold text-lg transition-all transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-red-400"
         >
-          L
+          <IconClear className="w-6 h-6" />
         </button>
       </div>
 
       <div
-        className={`absolute top-4 left-4 z-20 transition-all duration-700 ease-in-out origin-top-left ${
+        className={`absolute top-4 left-4 z-40 transition-all duration-700 ease-in-out origin-top-left ${
           isMinimized
             ? "scale-75 opacity-80 hover:opacity-100"
             : "scale-100 opacity-100"
@@ -322,36 +324,37 @@ export const GraphCanvas: React.FC = () => {
       >
         <button
           onClick={() => setShowHelp(!showHelp)}
-          className="w-10 h-10 bg-white rounded-full shadow-md border border-slate-200 flex items-center justify-center text-slate-600 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="w-10 h-10 bg-[#181825] hover:bg-[#313244] rounded-full shadow-md border border-[#b4befe]/30 flex items-center justify-center text-[#b4befe] font-bold text-lg transition-all focus:outline-none active:scale-95"
         >
-          ?
+          <IconHelp className="w-6 h-6" />
         </button>
 
         {showHelp && (
-          <div className="mt-2 bg-white/95 backdrop-blur p-4 rounded-xl shadow-lg border border-slate-200 w-64 animate-fade-in">
-            <h1 className="text-sm font-bold text-slate-800 border-b pb-2 mb-2">
+          <div className="mt-2 bg-[#181825]/95 backdrop-blur p-4 rounded-xl shadow-lg border border-[#cba6f7]/30 w-64 animate-fade-in">
+            <h1 className="text-sm font-bold text-[#cba6f7] border-b border-[#313244] pb-2 mb-2">
               Controles Táctiles
             </h1>
-            <ul className="text-sm text-slate-600 space-y-2">
+            <ul className="text-sm text-[#bac2de] space-y-2">
               <li>
-                <span className="text-blue-500 font-bold">•</span>{" "}
-                <b>Toque vacío:</b> Nuevo estado
+                <span className="text-[#89dceb] font-bold">•</span>{" "}
+                <b>Toque:</b> Nuevo Estado
               </li>
               <li>
-                <span className="text-blue-500 font-bold">•</span>{" "}
+                <span className="text-[#89dceb] font-bold">•</span>{" "}
+                <b>Modo Estados:</b> <br /> Arrastra para mover <br />
+                Doble toque para alternar Final
+              </li>
+              <li>
+                <span className="text-[#89dceb] font-bold">•</span>{" "}
                 <b>Modo Conectar:</b> Arrastra entre nodos
               </li>
               <li>
-                <span className="text-blue-500 font-bold">•</span>{" "}
-                <b>Doble toque:</b> Alternar Final
-              </li>
-              <li>
-                <span className="text-blue-500 font-bold">•</span>{" "}
+                <span className="text-[#89dceb] font-bold">•</span>{" "}
                 <b>Toque largo:</b> Eliminar elemento
               </li>
               <li>
-                <span className="text-blue-500 font-bold">•</span>{" "}
-                <b>Toque en arista:</b> Cambiar símbolo (0/1)
+                <span className="text-[#89dceb] font-bold">•</span>{" "}
+                <b>Toque en Arista:</b> Cambiar símbolo (0/1)
               </li>
             </ul>
           </div>
@@ -359,7 +362,7 @@ export const GraphCanvas: React.FC = () => {
       </div>
 
       <div
-        className={`absolute left-1/2 -translate-x-1/2 bg-white/90 backdrop-blur p-1.5 rounded-full shadow-lg border border-slate-200 flex gap-1 z-20 transition-all duration-700 ease-in-out origin-bottom ${
+        className={`absolute left-1/2 -translate-x-1/2 bg-[#181825]/90 backdrop-blur p-1.5 rounded-full shadow-lg border border-[#cba6f7]/30 flex gap-1 z-20 transition-all duration-700 ease-in-out origin-bottom ${
           isMinimized
             ? "bottom-2 scale-75 opacity-60 hover:opacity-100"
             : "bottom-8 scale-100 opacity-100"
@@ -369,21 +372,21 @@ export const GraphCanvas: React.FC = () => {
           onClick={() => setIsDrawMode(false)}
           className={`px-6 py-3 text-sm font-bold rounded-full transition-all flex items-center gap-2 ${
             isDrawMode
-              ? "text-slate-500 hover:bg-slate-100"
-              : "bg-blue-500 text-white shadow-md scale-105"
+              ? "text-[#bac2de] hover:bg-[#313244]"
+              : "bg-[#f5c2e7] text-[#11111b] shadow-[0_0_10px_rgba(245,194,231,0.5)] scale-105"
           }`}
         >
-          E
+          <IconState className="w-6 h-6" />
         </button>
         <button
           onClick={() => setIsDrawMode(true)}
           className={`px-6 py-3 text-sm font-bold rounded-full transition-all flex items-center gap-2 ${
             isDrawMode
-              ? "bg-green-500 text-white shadow-md scale-105"
-              : "text-slate-500 hover:bg-slate-100"
+              ? "bg-[#f5c2e7] text-[#11111b] shadow-[0_0_10px_rgba(245,194,231,0.5)] scale-105"
+              : "text-[#bac2de] hover:bg-[#313244]"
           }`}
         >
-          T
+          <IconConnect className="w-6 h-6" />
         </button>
       </div>
     </div>

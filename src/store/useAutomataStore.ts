@@ -9,14 +9,96 @@ const initialNode: ElementDefinition = {
   classes: "initial",
 };
 
+const defaultAutomaton: ElementDefinition[] = [
+  // --- NODOS ---
+  {
+    group: "nodes",
+    data: { id: "q0", label: "q0", isInitial: true, isFinal: false },
+    position: { x: 100, y: 100 },
+    classes: "initial",
+  },
+  {
+    group: "nodes",
+    data: { id: "q1", label: "q1", isInitial: false, isFinal: false },
+    position: { x: 100, y: 220 },
+  },
+  {
+    group: "nodes",
+    data: { id: "q4", label: "q4", isInitial: false, isFinal: false },
+    position: { x: 220, y: 100 },
+  },
+  {
+    group: "nodes",
+    data: { id: "q3", label: "q3", isInitial: false, isFinal: false },
+    position: { x: 220, y: 220 },
+  },
+  {
+    group: "nodes",
+    data: { id: "q2", label: "q2", isInitial: false, isFinal: true },
+    position: { x: 340, y: 100 },
+    classes: "final",
+  },
+
+  // --- TRANSICIONES ---
+
+  {
+    group: "edges",
+    data: { id: "e-q0-q0-1", source: "q0", target: "q0", label: "1" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q0-q1-0", source: "q0", target: "q1", label: "0" },
+  },
+
+  // Salidas de q1
+  {
+    group: "edges",
+    data: { id: "e-q1-q2-0", source: "q1", target: "q2", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q1-q3-1", source: "q1", target: "q3", label: "1" },
+  },
+
+  // Salidas de q4
+  {
+    group: "edges",
+    data: { id: "e-q4-q2-0", source: "q4", target: "q2", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q4-q3-1", source: "q4", target: "q3", label: "1" },
+  },
+
+  // Salidas de q3
+  {
+    group: "edges",
+    data: { id: "e-q3-q4-0", source: "q3", target: "q4", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q3-q3-1", source: "q3", target: "q3", label: "1" },
+  },
+
+  // Salidas de q2 (Separamos "0, 1" en dos aristas lógicas para que el motor las procese correctamente)
+  {
+    group: "edges",
+    data: { id: "e-q2-q2-0", source: "q2", target: "q2", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q2-q2-1", source: "q2", target: "q2", label: "1" },
+  },
+];
+
 const initialSimulationState = {
-  inputString: '',
+  inputString: "",
   currentIndex: -1,
   activeNodeOriginal: null,
   activeNodeMinimized: null,
   activeEdgeOriginal: null,
   activeEdgeMinimized: null,
-  status: 'IDLE' as const,
+  status: "IDLE" as const,
 };
 
 const calculateSinkInjection = (
@@ -119,8 +201,8 @@ const calculateSinkInjection = (
 };
 
 export const useAutomataStore = create<AutomataState>((set, get) => ({
-  elements: [initialNode],
-  nodeCount: 1,
+  elements: [...defaultAutomaton],
+  nodeCount: 5,
 
   minimizedElements: [],
   equivalenceClasses: [],
@@ -352,12 +434,12 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
       const nodeToClassMap: Record<string, string> = {};
 
       const PALETTE = [
-        { bg: "#e0e7ff", border: "#818cf8", text: "#4338ca" },
-        { bg: "#fce7f3", border: "#f472b6", text: "#be185d" },
-        { bg: "#fef3c7", border: "#fbbf24", text: "#b45309" },
-        { bg: "#e0f2fe", border: "#38bdf8", text: "#0369a1" },
-        { bg: "#ccfbf1", border: "#2dd4bf", text: "#0f766e" },
-        { bg: "#f3e8ff", border: "#c084fc", text: "#7e22ce" },
+        { bg: "rgba(245, 194, 231, 0.15)", border: "#f5c2e7", text: "#f5c2e7" }, // Pink
+        { bg: "rgba(203, 166, 247, 0.15)", border: "#cba6f7", text: "#cba6f7" }, // Mauve
+        { bg: "rgba(116, 199, 236, 0.15)", border: "#74c7ec", text: "#74c7ec" }, // Sapphire
+        { bg: "rgba(148, 226, 213, 0.15)", border: "#94e2d5", text: "#94e2d5" }, // Teal
+        { bg: "rgba(242, 205, 205, 0.15)", border: "#f2cdcd", text: "#f2cdcd" }, // Flamingo
+        { bg: "rgba(180, 190, 254, 0.15)", border: "#b4befe", text: "#b4befe" }, // Lavender
       ];
 
       let classIndex = 0;
@@ -458,16 +540,21 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
   startSimulation: (input: string) => {
     const { elements, minimizedElements } = get();
 
-    const initNodeOrig = elements.find(el => el.group === "nodes" && el.data.isInitial);
-    
+    const initNodeOrig = elements.find(
+      (el) => el.group === "nodes" && el.data.isInitial,
+    );
+
     // CORRECCIÓN AQUÍ: Buscar el nodo por clase o por id de grupo equivalente para evitar nulos
-    const initNodeMin = minimizedElements.find(el => 
-      el.group === "nodes" && 
-      (el.classes?.includes("initial-class") || el.data.id === "eq-class-0")
+    const initNodeMin = minimizedElements.find(
+      (el) =>
+        el.group === "nodes" &&
+        (el.classes?.includes("initial-class") || el.data.id === "eq-class-0"),
     );
 
     if (!initNodeOrig) {
-      console.error("No se encontró el estado inicial en el autómata original.");
+      console.error(
+        "No se encontró el estado inicial en el autómata original.",
+      );
       return;
     }
 
@@ -476,26 +563,33 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
         inputString: input,
         currentIndex: 0,
         activeNodeOriginal: initNodeOrig.data.id || null,
-        activeNodeMinimized: initNodeMin ? (initNodeMin.data.id || null) : null,
+        activeNodeMinimized: initNodeMin ? initNodeMin.data.id || null : null,
         activeEdgeOriginal: null,
         activeEdgeMinimized: null,
-        status: 'RUNNING',
+        status: "RUNNING",
       },
     }));
   },
 
   nextStep: () => {
     const { simulation, elements, minimizedElements } = get();
-    const { inputString, currentIndex, activeNodeOriginal, activeNodeMinimized } = simulation;
+    const {
+      inputString,
+      currentIndex,
+      activeNodeOriginal,
+      activeNodeMinimized,
+    } = simulation;
 
     if (currentIndex >= inputString.length) {
-      const currNodeOrig = elements.find(el => el.group === "nodes" && el.data.id === activeNodeOriginal);
+      const currNodeOrig = elements.find(
+        (el) => el.group === "nodes" && el.data.id === activeNodeOriginal,
+      );
       const isAccepted = currNodeOrig?.data?.isFinal || false;
 
       set((state) => ({
         simulation: {
           ...state.simulation,
-          status: isAccepted ? 'ACCEPTED' : 'REJECTED',
+          status: isAccepted ? "ACCEPTED" : "REJECTED",
           activeEdgeOriginal: null,
           activeEdgeMinimized: null,
         },
@@ -505,23 +599,33 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
 
     const symbol = inputString[currentIndex];
 
-    const edgeOrig = elements.find(el => 
-      el.group === "edges" && el.data.source === activeNodeOriginal && String(el.data.label) === symbol
+    const edgeOrig = elements.find(
+      (el) =>
+        el.group === "edges" &&
+        el.data.source === activeNodeOriginal &&
+        String(el.data.label) === symbol,
     );
-    
+
     // CORRECCIÓN AQUÍ: Validar transiciones buscando tanto de nodos hijos como de padres compuestos
-    const edgeMin = minimizedElements.find(el => 
-      el.group === "edges" && el.data.source === activeNodeMinimized && String(el.data.label) === symbol
+    const edgeMin = minimizedElements.find(
+      (el) =>
+        el.group === "edges" &&
+        el.data.source === activeNodeMinimized &&
+        String(el.data.label) === symbol,
     );
 
     set((state) => ({
       simulation: {
         ...state.simulation,
         currentIndex: currentIndex + 1,
-        activeNodeOriginal: edgeOrig ? (edgeOrig.data.target || activeNodeOriginal) : activeNodeOriginal,
-        activeNodeMinimized: edgeMin ? (edgeMin.data.target || activeNodeMinimized) : activeNodeMinimized,
-        activeEdgeOriginal: edgeOrig ? (edgeOrig.data.id || null) : null,
-        activeEdgeMinimized: edgeMin ? (edgeMin.data.id || null) : null,
+        activeNodeOriginal: edgeOrig
+          ? edgeOrig.data.target || activeNodeOriginal
+          : activeNodeOriginal,
+        activeNodeMinimized: edgeMin
+          ? edgeMin.data.target || activeNodeMinimized
+          : activeNodeMinimized,
+        activeEdgeOriginal: edgeOrig ? edgeOrig.data.id || null : null,
+        activeEdgeMinimized: edgeMin ? edgeMin.data.id || null : null,
       },
     }));
   },
@@ -536,7 +640,7 @@ export const useAutomataStore = create<AutomataState>((set, get) => ({
     }
 
     const targetString = simulation.inputString;
-    
+
     startSimulation(targetString);
     for (let i = 0; i < targetIndex; i++) {
       nextStep();

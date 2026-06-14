@@ -41,17 +41,17 @@ const minimizedStylesheet: StylesheetStyle[] = [
   {
     selector: "node.sink-node",
     style: {
-      "background-color": "#f3f4f6",
+      "background-color": "#313244",
       "border-width": 2,
-      "border-color": "#9ca3af",
+      "border-color": "#7f849c",
       "border-style": "dashed",
-      color: "#4b5563",
+      color: "#cdd6f4",
     },
   },
   {
     selector: "node.equivalence-group",
     style: {
-      "background-color": "data(bgColor)", // Lee el color desde el store
+      "background-color": "data(bgColor)",
       "background-opacity": 0.4,
       "border-width": 2,
       "border-color": "data(borderColor)",
@@ -92,15 +92,17 @@ const minimizedStylesheet: StylesheetStyle[] = [
     selector: "edge[label]",
     style: {
       width: 2,
-      "line-color": "#818cf8",
-      "target-arrow-color": "#818cf8",
+      "line-color": "#b4befe",
+      "target-arrow-color": "#b4befe",
       "target-arrow-shape": "triangle",
       "curve-style": "bezier",
       label: "data(label)",
       "font-size": "14px",
+      color: "#cdd6f4",
       "text-background-opacity": 1,
-      "text-background-color": "#ffffff",
+      "text-background-color": "#181825",
       "text-background-padding": "2px",
+      "text-background-shape": "roundrectangle",
     },
   },
   {
@@ -112,7 +114,6 @@ const minimizedStylesheet: StylesheetStyle[] = [
       "loop-sweep": "45deg",
     },
   },
-  // --- CLASES DINÁMICAS PARA LA SIMULACIÓN PASO A PASO ---
   {
     selector: "node.active",
     style: {
@@ -124,7 +125,7 @@ const minimizedStylesheet: StylesheetStyle[] = [
   {
     selector: "edge.active",
     style: {
-      "width": "4px",
+      width: "4px",
       "line-color": "#eab308",
       "target-arrow-color": "#eab308",
       color: "#ca8a04",
@@ -136,9 +137,12 @@ export const MinimizedCanvas: React.FC = () => {
   const { minimizedElements } = useAutomataStore();
   const cyRef = useRef<Core | null>(null);
 
-  // Traer los estados de simulación minimizados del store para la reactividad
-  const activeNodeMinimized = useAutomataStore((state) => state.simulation.activeNodeMinimized);
-  const activeEdgeMinimized = useAutomataStore((state) => state.simulation.activeEdgeMinimized);
+  const activeNodeMinimized = useAutomataStore(
+    (state) => state.simulation.activeNodeMinimized,
+  );
+  const activeEdgeMinimized = useAutomataStore(
+    (state) => state.simulation.activeEdgeMinimized,
+  );
 
   const handleCyInit = (cy: Core) => {
     if (cyRef.current === cy) return;
@@ -146,16 +150,15 @@ export const MinimizedCanvas: React.FC = () => {
     cy.boxSelectionEnabled(false);
   };
 
-  // EFFECT REACTIVO PARA ILUMINAR EL AFD MINIMIZADO EN TIEMPO REAL
   useEffect(() => {
     if (!cyRef.current) return;
 
-    // Limpiar clases activas de pasos anteriores
     cyRef.current.elements().removeClass("active");
 
-    // Inyectar clase active si se encuentra el ID en el motor
-    if (activeNodeMinimized) cyRef.current.$(`#${activeNodeMinimized}`).addClass("active");
-    if (activeEdgeMinimized) cyRef.current.$(`#${activeEdgeMinimized}`).addClass("active");
+    if (activeNodeMinimized)
+      cyRef.current.$(`#${activeNodeMinimized}`).addClass("active");
+    if (activeEdgeMinimized)
+      cyRef.current.$(`#${activeEdgeMinimized}`).addClass("active");
   }, [activeNodeMinimized, activeEdgeMinimized]);
 
   useEffect(() => {
@@ -198,10 +201,10 @@ export const MinimizedCanvas: React.FC = () => {
   }, [minimizedElements]);
 
   return (
-    <div className="w-full h-full bg-slate-100 overflow-hidden relative">
+    <div className="w-full h-full bg-[#181825] overflow-hidden relative">
       {minimizedElements.length === 0 ? (
-        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-slate-100/80 backdrop-blur-sm">
-          <p className="text-sm font-medium text-slate-500 max-w-xs">
+        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center z-10 bg-[#181825]/80 backdrop-blur-sm">
+          <p className="text-sm font-medium text-[#bac2de] max-w-xs">
             Presiona el botón "Minimizar" para generar el autómata equivalente
             paso a paso.
           </p>
