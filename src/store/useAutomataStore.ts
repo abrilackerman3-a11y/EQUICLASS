@@ -116,6 +116,15 @@ const defaultAutomaton: ElementDefinition[] = [
     group: "edges",
     data: { id: "e-q5-q6-1", source: "q5", target: "q6", label: "1" },
   },
+
+  {
+    group: "edges",
+    data: { id: "e-q6-q6-0", source: "q6", target: "q6", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q6-q6-1", source: "q6", target: "q6", label: "1" },
+  },
 ];
 
 const initialSimulationState = {
