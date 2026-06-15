@@ -11,83 +11,110 @@ const initialNode: ElementDefinition = {
 
 const defaultAutomaton: ElementDefinition[] = [
   // --- NODOS ---
+  // q0: Inicial y Final (Lo ponemos en la parte superior central)
   {
     group: "nodes",
-    data: { id: "q0", label: "q0", isInitial: true, isFinal: false },
-    position: { x: 100, y: 100 },
-    classes: "initial",
+    data: { id: "q0", label: "q0", isInitial: true, isFinal: true },
+    position: { x: 250, y: 100 },
+    classes: "initial final",
   },
+
+  // Fila 1
   {
     group: "nodes",
     data: { id: "q1", label: "q1", isInitial: false, isFinal: false },
-    position: { x: 100, y: 220 },
+    position: { x: 150, y: 220 },
+  },
+  {
+    group: "nodes",
+    data: { id: "q2", label: "q2", isInitial: false, isFinal: false },
+    position: { x: 350, y: 220 },
+  },
+
+  // Fila 2
+  {
+    group: "nodes",
+    data: { id: "q3", label: "q3", isInitial: false, isFinal: true },
+    position: { x: 150, y: 340 },
+    classes: "final",
+  },
+  {
+    group: "nodes",
+    data: { id: "q6", label: "q6", isInitial: false, isFinal: false },
+    position: { x: 350, y: 340 },
+  },
+
+  // Fila 3
+  {
+    group: "nodes",
+    data: { id: "q5", label: "q5", isInitial: false, isFinal: false },
+    position: { x: 150, y: 460 },
   },
   {
     group: "nodes",
     data: { id: "q4", label: "q4", isInitial: false, isFinal: false },
-    position: { x: 220, y: 100 },
-  },
-  {
-    group: "nodes",
-    data: { id: "q3", label: "q3", isInitial: false, isFinal: false },
-    position: { x: 220, y: 220 },
-  },
-  {
-    group: "nodes",
-    data: { id: "q2", label: "q2", isInitial: false, isFinal: true },
-    position: { x: 340, y: 100 },
-    classes: "final",
+    position: { x: 350, y: 460 },
   },
 
   // --- TRANSICIONES ---
-
-  {
-    group: "edges",
-    data: { id: "e-q0-q0-1", source: "q0", target: "q0", label: "1" },
-  },
+  // Desde q0
   {
     group: "edges",
     data: { id: "e-q0-q1-0", source: "q0", target: "q1", label: "0" },
   },
-
-  // Salidas de q1
   {
     group: "edges",
-    data: { id: "e-q1-q2-0", source: "q1", target: "q2", label: "0" },
+    data: { id: "e-q0-q2-1", source: "q0", target: "q2", label: "1" },
+  },
+
+  // Desde q1
+  {
+    group: "edges",
+    data: { id: "e-q1-q6-0", source: "q1", target: "q6", label: "0" },
   },
   {
     group: "edges",
     data: { id: "e-q1-q3-1", source: "q1", target: "q3", label: "1" },
   },
 
-  // Salidas de q4
+  // Desde q2
   {
     group: "edges",
-    data: { id: "e-q4-q2-0", source: "q4", target: "q2", label: "0" },
+    data: { id: "e-q2-q3-0", source: "q2", target: "q3", label: "0" },
   },
   {
     group: "edges",
-    data: { id: "e-q4-q3-1", source: "q4", target: "q3", label: "1" },
+    data: { id: "e-q2-q6-1", source: "q2", target: "q6", label: "1" },
   },
 
-  // Salidas de q3
+  // Desde q3
   {
     group: "edges",
     data: { id: "e-q3-q4-0", source: "q3", target: "q4", label: "0" },
   },
   {
     group: "edges",
-    data: { id: "e-q3-q3-1", source: "q3", target: "q3", label: "1" },
+    data: { id: "e-q3-q5-1", source: "q3", target: "q5", label: "1" },
   },
 
-  // Salidas de q2 (Separamos "0, 1" en dos aristas lógicas para que el motor las procese correctamente)
+  // Desde q4
   {
     group: "edges",
-    data: { id: "e-q2-q2-0", source: "q2", target: "q2", label: "0" },
+    data: { id: "e-q4-q6-0", source: "q4", target: "q6", label: "0" },
   },
   {
     group: "edges",
-    data: { id: "e-q2-q2-1", source: "q2", target: "q2", label: "1" },
+    data: { id: "e-q4-q3-1", source: "q4", target: "q3", label: "1" },
+  },
+
+  // Desde q5
+  {
+    group: "edges",
+    data: { id: "e-q5-q3-0", source: "q5", target: "q3", label: "0" },
+  },
+  {
+    group: "edges",
+    data: { id: "e-q5-q6-1", source: "q5", target: "q6", label: "1" },
   },
 ];
 
@@ -202,7 +229,7 @@ const calculateSinkInjection = (
 
 export const useAutomataStore = create<AutomataState>((set, get) => ({
   elements: [...defaultAutomaton],
-  nodeCount: 5,
+  nodeCount: 7,
 
   minimizedElements: [],
   equivalenceClasses: [],
